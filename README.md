@@ -35,7 +35,7 @@
 ![image](https://github.com/Karthick-ng/Real-Time-Market-Insights/assets/116434132/bd0d18ba-2843-4e8c-af7c-654621f6d403)
 
 ## UI Demo Video:
-
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/YOUTUBE_VIDEO_ID_HERE/0.jpg)](https://www.youtube.com/watch?v=Q05lviXkE5M)
 
 ## Development phase:
 
