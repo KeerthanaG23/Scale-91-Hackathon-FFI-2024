@@ -736,7 +736,7 @@ elif(selected=="Algorithmic Trading"):
         nifty_fmcg = pd.read_csv('./Streamlit_app/datasets/NIFTY FMCG.csv',parse_dates=["Date"])
         nifty_IT = pd.read_csv('./Streamlit_app/datasets/NIFTY IT.csv',parse_dates=["Date"])
         nifty_metal = pd.read_csv('./Streamlit_app/datasets/NIFTY METAL.csv',parse_dates=["Date"])
-        nifty_pharma = pd.read_csv('./datasets/NIFTY PHARMA.csv',parse_dates=["Date"])
+        nifty_pharma = pd.read_csv('./Streamlit_app/datasets/NIFTY PHARMA.csv',parse_dates=["Date"])
         nifty_auto_2019 = nifty_auto[nifty_auto['Date'] > '2019-12-31']
         nifty_bank_2019 = nifty_bank[nifty_bank['Date'] > '2019-12-31']
         nifty_fmcg_2019 = nifty_fmcg[nifty_fmcg['Date'] > '2019-12-31']
