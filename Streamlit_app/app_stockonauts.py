@@ -1,5 +1,6 @@
 from matplotlib.pyplot import axis
 import matplotlib.pyplot as plt
+from yahoo_fin import stock_info
 
 import streamlit as st  
 from streamlit_option_menu import option_menu 
@@ -27,6 +28,7 @@ import replicate
 import random
 import cufflinks
 
+import transformers
 from transformers import BertTokenizer, BertForSequenceClassification
 from transformers import pipeline
 import requests
@@ -67,7 +69,7 @@ start = st.sidebar.date_input('Start', datetime.date(2019, 1, 1))  # start date 
 end = st.sidebar.date_input('End', datetime.date.today())
 
 
-stock_df = pd.read_csv("./datasets/StockStreamTickersData.csv")
+stock_df = pd.read_csv("./datasets/TickersData.csv")
 #print(stock_df)
 if(selected == 'Comparative Analysis of Stock Performances'):
     st.subheader("Comparative Analysis of Stock Performances")
@@ -79,7 +81,7 @@ if(selected == 'Comparative Analysis of Stock Performances'):
     with st.spinner('Loading...'):
         time.sleep(2)
        # st.success('Loaded')
-    dict_csv = pd.read_csv('./datasets/StockStreamTickersData.csv', header=None, index_col=0).to_dict()[1]
+    dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
     # print(dict_csv)
     symb_list = [] 
     for i in dropdown:  
@@ -156,71 +158,71 @@ elif(selected == 'Live Stock Prices'):
     a = st.selectbox('Pick a Company', tickers)
 
     with st.spinner('Loading...'):  # spinner while loading
-            time.sleep(2)
+        time.sleep(2)
 
-    dict_csv = pd.read_csv('./datasets/StockStreamTickersData.csv', header=None, index_col=0).to_dict()[1]  # read csv file
-    symb_list = []  # list for storing symbols
+        dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]  # read csv file
+        symb_list = []  # list for storing symbols
 
-    val = dict_csv.get(a)  # get symbol from csv file
-    symb_list.append(val)  # append symbol to list
+        val = dict_csv.get(a)  # get symbol from csv file
+        symb_list.append(val)  # append symbol to list
 
-    if "button_clicked" not in st.session_state:  # if button is not clicked
-        st.session_state.button_clicked = False  # set button clicked to false
+        if "button_clicked" not in st.session_state:  # if button is not clicked
+            st.session_state.button_clicked = False  # set button clicked to false
 
-    def callback():  # function for updating data
-        # if button is clicked
-        st.session_state.button_clicked = True  # set button clicked to true
-    if (
-        st.button("Search", on_click=callback)  # button for searching data
-        or st.session_state.button_clicked  # if button is clicked
-    ):
-        if(a == ""):  # if user doesn't select any company
-            st.write("Click Search to Search for a Company")
-            with st.spinner('Loading...'):  # spinner while loading
-             time.sleep(2)
-        else:  # if user selects a company
-            # download data from yfinance
-            data = yf.download(symb_list, start=start, end=end)
-            data.reset_index(inplace=True)  # reset index
-            st.subheader('Raw Data of {}'.format(a))  # display raw data
-            st.write(data)  # display data
+        def callback():  # function for updating data
+            # if button is clicked
+            st.session_state.button_clicked = True  # set button clicked to true
+        if (
+            st.button("Search", on_click=callback)  # button for searching data
+            or st.session_state.button_clicked  # if button is clicked
+        ):
+            if(a == ""):  # if user doesn't select any company
+                st.write("Click Search to Search for a Company")
+                with st.spinner('Loading...'):  # spinner while loading
+                    time.sleep(2)
+            else:  # if user selects a company
+                # download data from yfinance
+                data = yf.download(symb_list, start=start, end=end)
+                data.reset_index(inplace=True)  # reset index
+                st.subheader('Raw Data of {}'.format(a))  # display raw data
+                st.write(data)  # display data
 
-            def plot_raw_data():  # function for plotting raw data
-                fig = go.Figure()  # create figure
-                fig.add_trace(go.Scatter(  # add scatter plot
-                    x=data['Date'], y=data['Open'], name="stock_open"))  # x-axis: date, y-axis: open
-                fig.add_trace(go.Scatter(  # add scatter plot
-                    x=data['Date'], y=data['Close'], name="stock_close"))  # x-axis: date, y-axis: close
-                fig.layout.update(  # update layout
-                    title_text='Line Chart of {}'.format(a) , xaxis_rangeslider_visible=True)  # title, x-axis: rangeslider
-                st.plotly_chart(fig)  # display plotly chart
+                def plot_raw_data():  # function for plotting raw data
+                    fig = go.Figure()  # create figure
+                    fig.add_trace(go.Scatter(  # add scatter plot
+                        x=data['Date'], y=data['Open'], name="stock_open"))  # x-axis: date, y-axis: open
+                    fig.add_trace(go.Scatter(  # add scatter plot
+                        x=data['Date'], y=data['Close'], name="stock_close"))  # x-axis: date, y-axis: close
+                    fig.layout.update(  # update layout
+                        title_text='Line Chart of {}'.format(a) , xaxis_rangeslider_visible=True)  # title, x-axis: rangeslider
+                    st.plotly_chart(fig)  # display plotly chart
 
-            def plot_candle_data():  # function for plotting candle data
-                fig = go.Figure()  # create figure
-                fig.add_trace(go.Candlestick(x=data['Date'],  # add candlestick plot
-                                             # x-axis: date, open
-                                             open=data['Open'],
-                                             high=data['High'],  # y-axis: high
-                                             low=data['Low'],  # y-axis: low
-                                             close=data['Close'], name='market data'))  # y-axis: close
-                fig.update_layout(  # update layout
-                    title='Candlestick Chart of {}'.format(a),  # title
-                    yaxis_title='Stock Price',  # y-axis: title
-                    xaxis_title='Date')  # x-axis: title
-                st.plotly_chart(fig)  # display plotly chart
+                def plot_candle_data():  # function for plotting candle data
+                    fig = go.Figure()  # create figure
+                    fig.add_trace(go.Candlestick(x=data['Date'],  # add candlestick plot
+                                                # x-axis: date, open
+                                                open=data['Open'],
+                                                high=data['High'],  # y-axis: high
+                                                low=data['Low'],  # y-axis: low
+                                                close=data['Close'], name='market data'))  # y-axis: close
+                    fig.update_layout(  # update layout
+                        title='Candlestick Chart of {}'.format(a),  # title
+                        yaxis_title='Stock Price',  # y-axis: title
+                        xaxis_title='Date')  # x-axis: title
+                    st.plotly_chart(fig)  # display plotly chart
 
-            chart = ('Candle Stick', 'Line Chart')  # chart types
-            # dropdown for selecting chart type
-            dropdown1 = st.selectbox('Pick your chart', chart)
-            with st.spinner('Loading...'):  # spinner while loading
-             time.sleep(2)
-            if (dropdown1) == 'Candle Stick':  # if user selects 'Candle Stick'
-                plot_candle_data()  # plot candle data
-            elif (dropdown1) == 'Line Chart':  # if user selects 'Line Chart'
-                plot_raw_data()  # plot raw data
-            else:  # if user doesn't select any chart
-                plot_candle_data()  # plot candle data
-    
+                chart = ('Candle Stick', 'Line Chart')  # chart types
+                # dropdown for selecting chart type
+                dropdown1 = st.selectbox('Pick your chart', chart)
+                with st.spinner('Loading...'):  # spinner while loading
+                    time.sleep(2)
+                if (dropdown1) == 'Candle Stick':  # if user selects 'Candle Stick'
+                    plot_candle_data()  # plot candle data
+                elif (dropdown1) == 'Line Chart':  # if user selects 'Line Chart'
+                    plot_raw_data()  # plot raw data
+                else:  # if user doesn't select any chart
+                    plot_candle_data()  # plot candle data
+        
 
 
 elif(selected == 'Stock Forecast'):  # if user selects 'Stock Prediction'
@@ -230,7 +232,7 @@ elif(selected == 'Stock Forecast'):  # if user selects 'Stock Prediction'
     a = st.selectbox('Pick a Company', tickers)
     with st.spinner('Loading...'):  # spinner while loading
              time.sleep(2)
-    dict_csv = pd.read_csv('./datasets/StockStreamTickersData.csv', header=None, index_col=0).to_dict()[1]  # read csv file
+    dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]  # read csv file
     symb_list = []  # list for storing symbols
     val = dict_csv.get(a)  # get symbol from csv file
     symb_list.append(val)  # append symbol to list
@@ -369,7 +371,7 @@ elif(selected=="Algorithmic Trading"):
         if len(selected_options)==0:
             st.write("Opps! We couldn't find that.")
         # st.write('Selected options:', selected_options)
-        dict_csv = pd.read_csv('./datasets/StockStreamTickersData.csv', header=None, index_col=0).to_dict()[1]
+        dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
         val = dict_csv.get(selected_options)  
         symb=val
         # st.write(symb[:])
@@ -486,13 +488,13 @@ elif(selected=="Algorithmic Trading"):
         
         
         df_sorted = df.sort_values(by='P/B Ratio', ascending=False)
-        col1.write(df_sorted)
+        col1.write(df_sorted[['Bank','NIM','NPA','P/B Ratio']])
         col2.subheader("Valuation Metric")
         col2.write("Low P/B Ratio - Undervaluation, Potential Bargain, Financial Distress, Value Investing Opportunity")
         col2.write("High P/B Ratio - Market Confidence, Expectations of Future Growth, Industry Comparison, Potential Overvaluation")
         col2.write("Banks with higher Price-to-Book (P/B) Ratios are viewed favorably, indicating investor confidence and positive growth expectations. The positive difference between Net Interest Margin (NIM) and Non-Performing Assets (NPA) underscores effective income generation and risk management. A combination of a high P/B Ratio and a positive NIM-NPA difference suggests financial robustness, making these banks potentially attractive investments. However, thorough analysis considering external factors is crucial. Diversification across banks with varying P/B Ratios and NIM-NPA differences can mitigate risks. Investors should also monitor regulatory conditions and economic trends for informed decision-making.")
         max_diff_row = df.loc[df['NIM_NPA_Difference'].idxmax()]
-        col1.subheader("2. Bank with maximum P/B Ratio & positive NIM-NPA difference")
+        col1.subheader("2. Bank with maximum P/B Ratio & Higher NIM, Lower NPA")
         col1.success(df[(df['Bank'] == max_diff_row['Bank']) & (df['NIM_NPA_Difference'] > 0)].iloc[0]['Bank'])
 
         def generate_random_sector():
@@ -521,7 +523,7 @@ elif(selected=="Algorithmic Trading"):
         sector_sum = companies_df.groupby('Sector')['Yearly'].mean()
 
         sorted_sector_sum = sector_sum.sort_values(ascending=False)
-        col2.subheader("4. Average yearly earnings for each sector")
+        col2.subheader("4. Average P/E ratio each sector")
         col2.write(sorted_sector_sum)
         companies_df_sorted = companies_df.sort_values(by='Sector', ascending=False)
         col2.subheader("5. Selecting companies which have lesser average earnings than its sector earnings")
@@ -788,29 +790,25 @@ elif(selected=="Algorithmic Trading"):
         st.write(
             "By integrating P/E analysis with macro and microeconomic considerations, investors can make well-informed decisions, fostering a balanced and resilient investment portfolio. "
             "Regular reassessment and adaptation to changing market dynamics are integral to successful long-term investing."
-        )
-
-
-
-
-            
+        )   
 
     else:
         st.write("Please search for trading strategies...")
+
+
+        
 elif selected == "Personalized Investment Insights":
     st.subheader("Personalized Investment Insights")
-    default_investment_range = "Medium"
-    default_duration = "Mid-term"
+    
     default_sectors_of_interest = ["Finance"]
 
     # User inputs
     investment_range_options = ["Low", "Medium", "High"]
-    investment_range_index = investment_range_options.index(default_investment_range)
-    investment_range = st.selectbox("Select Investment Range", investment_range_options, index=investment_range_index)
+    investment_range = st.selectbox("Select Investment Range", investment_range_options)
 
-    duration_options = ["Short-term (ST)", "Long-term (LT)", "Mid-term"]
-    duration_index = duration_options.index(default_duration)
-    duration = st.radio("Select Duration", duration_options, index=duration_index)
+    duration_options = ["Short-term", "Mid-term","Long-term" ]
+
+    duration = st.radio("Select Duration", duration_options)
 
     sectors_of_interest_options = ["Tech", "Healthcare", "Finance", "Energy"]
     sectors_of_interest = st.multiselect("Select Sectors of Interest", sectors_of_interest_options, default=default_sectors_of_interest)
@@ -819,34 +817,41 @@ elif selected == "Personalized Investment Insights":
 
     # Display User Input
     st.write(f"*Selected Investment Price Range:* {investment_range}")
-    st.write(f"*Selected Duration:* {duration}  6MONTHS")
+    st.write(f"*Selected Duration:* {duration} ")
     st.write(f"*Selected Sectors of Interest:* {sectors_of_interest[0]}")
 
-    if not (investment_range == 'Medium' and duration == 'Mid-term' and 'Finance' in sectors_of_interest):
-        st.warning("## PLEASE SELECT All INPUT FIELDS")
-
-    else:
-        with st.spinner('Loading...'):
+    if (investment_range == 'Low' and duration == 'Mid-term' and 'Finance' in sectors_of_interest):
+         with st.spinner('Loading...'):
             time.sleep(2)  # Simulating some processing time, replace with actual data processing
 
             start = datetime.date(2019, 1, 1)
-            end = datetime.date.today()
-            stock_df = pd.read_csv("./datasets/StockStreamTickersData.csv")
+            end_f = datetime.date.today()
+            end= end_f - timedelta(days=1)
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
             tickers = stock_df["Company Name"]
-            yesterday = end - timedelta(days=2)
-            array = ['ICICI Bank Limited', 'State Bank of India', 'Kotak Mahindra Bank Limited', 'Bajaj Finserv Limited',
-                    'Axis Bank Limited', 'IDBI Bank Limited', ]
+            yesterday = end_f - timedelta(days=2)
+            array = ['YESBANK.NS',
+                    'UJJIVANSFB.NS',
+                    'UCOBANK.NS',
+                    'MAHABANK.NS',
+                    'CENTRALBK.NS',
+                    'PSB.NS',
+                    'IOB.NS',
+                    'EDELWEISS.NS',
+                    'IDFCFIRSTB.NS',
+                    'IDBI.NS',
+                    'JMFINANCIL.NS']
 
-            dict_csv = pd.read_csv('./datasets/StockStreamTickersData.csv', header=None, index_col=0).to_dict()[1]
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
             symb_list = []
             for i in array:
                 val = dict_csv.get(i)
                 symb_list.append(val)
 
-            data = yf.download(symb_list, start=yesterday, end=end)
+            data = yf.download(array, start=yesterday, end=end)
             data = data['Close']
             data.reset_index(inplace=True)
-            melted_data = pd.melt(data, id_vars=['Date'], value_vars=symb_list, var_name='Ticker', value_name='Price')
+            melted_data = pd.melt(data, id_vars=['Date'], value_vars=array, var_name='Ticker', value_name='Price')
 
             sorted_data = melted_data.sort_values(by='Price', ascending=True)
 
@@ -872,47 +877,894 @@ elif selected == "Personalized Investment Insights":
                 forecast['ds'] = pd.to_datetime(forecast['ds']).dt.date
                 end = date.today()
 
-                filtered_df = forecast[forecast['ds'] > end]
+                filtered_df = forecast[forecast['ds'] > end_f]
                 maxx_pred = filtered_df['yhat_upper'].max()
                 a = sorted_data[sorted_data['Ticker'] == i]
                 predicted_profit = maxx_pred - a['Price'].iloc[0]
 
                 buy_price = sorted_data[sorted_data["Ticker"] == i]['Price'].iloc[0]
                 result_df.loc[len(result_df)] = [i, predicted_profit, buy_price, maxx_pred]
-        result_df=result_df.sort_values(by='PredictedProfit', ascending=False)
+            result_df=result_df.sort_values(by='PredictedProfit', ascending=False)
+            os.environ["REPLICATE_API_TOKEN"] = "r8_drcPJJI0QkgcMSShXbRc9WmbtQdpjdV2e7nJv"
+            pre_prompt = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
+            input=result_df[:1]
+            prompt_input = '...Generate a phrase showcasing the bank as a stock to invest for a 6month range.provide response to just this and nothing else'
 
-        os.environ["REPLICATE_API_TOKEN"] = "r8_drcPJJI0QkgcMSShXbRc9WmbtQdpjdV2e7nJv"
-        pre_prompt = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
-        input=result_df[:1]
-        prompt_input = '...Generate a phrase showcasing the bank as a stock to invest for a 6month range.provide response to just this and nothing else'
+            # Generate LLM response
+            output = replicate.run('a16z-infra/llama13b-v2-chat:df7690f1994d94e96ad9d568eac121aecf50684a0b0963b25a41cc40061269e5', # LLM model
+                                    input={"prompt": f"{pre_prompt} {input} {prompt_input} Assistant: ", # Prompts
+                                    "temperature":0.2, "top_p":0.9, "max_length":300, "repetition_penalty":1})
+            
+            full_response = ""
 
-        # Generate LLM response
-        output = replicate.run('a16z-infra/llama13b-v2-chat:df7690f1994d94e96ad9d568eac121aecf50684a0b0963b25a41cc40061269e5', # LLM model
-                                input={"prompt": f"{pre_prompt} {input} {prompt_input} Assistant: ", # Prompts
-                                "temperature":0.2, "top_p":0.9, "max_length":250, "repetition_penalty":1})
+            for item in output:
+                full_response += item
+
+            st.success(full_response)
+            
+            st.write("## Result Summary")
+            st.write(result_df.reset_index(drop=True))
+
+            st.write('## Best Buying option in Finance sector')
+            cname = result_df[:1]['Ticker'].iloc[0]
+            st.write(f"*Company Name:* {cname}")
+
+            profit = result_df[:1]['PredictedProfit'].iloc[0]
+            st.write(f'*Predicted Profit:* {round(profit,2)}')
+
+            buy_p = result_df[:1]['Buying_Price'].iloc[0]
+            st.write(f'*Buying Price(today):* {round(buy_p,2)}')
+
+            sell_p = result_df[:1]['Exit_safe_price'].iloc[0]
+            st.write(f'*Safe Exit Selling Price:* {round(sell_p,2)}')
+
+    elif (investment_range == 'Low' and duration == 'Long-term' and 'Finance' in sectors_of_interest):
+        with st.spinner('Loading...'):
+            time.sleep(2)  # Simulating some processing time, replace with actual data processing
+
+            start = datetime.date(2019, 1, 1)
+            end_f = datetime.date.today()
+            end= end_f - timedelta(days=1)
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
+            tickers = stock_df["Company Name"]
+            yesterday = end_f - timedelta(days=2)
+            array = ['YESBANK.NS',
+                    'UJJIVANSFB.NS',
+                    'UCOBANK.NS',
+                    'MAHABANK.NS',
+                    'CENTRALBK.NS',
+                    'PSB.NS',
+                    'IOB.NS',
+                    'EDELWEISS.NS',
+                    'IDFCFIRSTB.NS',
+                    'IDBI.NS',
+                    'JMFINANCIL.NS' ]
+
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            symb_list = []
+            for i in array:
+                val = dict_csv.get(i)
+                symb_list.append(val)
+
+            data = yf.download(array, start=yesterday, end=end)
+            data = data['Close']
+            data.reset_index(inplace=True)
+            melted_data = pd.melt(data, id_vars=['Date'], value_vars=array, var_name='Ticker', value_name='Price')
+
+            sorted_data = melted_data.sort_values(by='Price', ascending=True)
+
+            new_t = []
+            for i in sorted_data['Ticker']:
+                new_t.append(i)
+
+            result_df = pd.DataFrame(columns=['Ticker', 'PredictedProfit', 'Buying_Price', 'Exit_safe_price'])
+
+            a = new_t
+            for i in a:
+                data = yf.download(i, start=start, end=end)
+                data.reset_index(inplace=True)
+                n_years = 1.5
+                period = int(n_years * 365)
+                df_train = data[['Date', 'Close']]
+                df_train = df_train.rename(columns={"Date": "ds", "Close": "y"})  # rename columns
+
+                m = Prophet()
+                m.fit(df_train)
+                future = m.make_future_dataframe(periods=period)
+                forecast = m.predict(future)
+                forecast['ds'] = pd.to_datetime(forecast['ds']).dt.date
+                end = date.today()
+
+                filtered_df = forecast[forecast['ds'] > end_f]
+                maxx_pred = filtered_df['yhat_upper'].max()
+                a = sorted_data[sorted_data['Ticker'] == i]
+                predicted_profit = maxx_pred - a['Price'].iloc[0]
+
+                buy_price = sorted_data[sorted_data["Ticker"] == i]['Price'].iloc[0]
+                result_df.loc[len(result_df)] = [i, predicted_profit, buy_price, maxx_pred]
+            result_df=result_df.sort_values(by='PredictedProfit', ascending=False)
+
+            os.environ["REPLICATE_API_TOKEN"] = "r8_drcPJJI0QkgcMSShXbRc9WmbtQdpjdV2e7nJv"
+            pre_prompt = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
+            input=result_df[:1]
+            prompt_input = f'...Generate a phrase showcasing the bank as a stock to invest for a {period} days range.provide response to just this and nothing else'
+
+            # Generate LLM response
+            output = replicate.run('a16z-infra/llama13b-v2-chat:df7690f1994d94e96ad9d568eac121aecf50684a0b0963b25a41cc40061269e5', # LLM model
+                                    input={"prompt": f"{pre_prompt} {input} {prompt_input} Assistant: ", # Prompts
+                                    "temperature":0.2, "top_p":0.9, "max_length":250, "repetition_penalty":1})
+            
+            full_response = ""
+
+            for item in output:
+                full_response += item
+
+            st.success(full_response)
+            
+            st.write("## Result Summary")
+            st.write(result_df.reset_index(drop=True))
+
+            st.write('## Best Buying option in Finance sector')
+            cname = result_df[:1]['Ticker'].iloc[0]
+            st.write(f"*Company Name:* {cname}")
+
+            profit = result_df[:1]['PredictedProfit'].iloc[0]
+            st.write(f'*Predicted Profit:* {round(profit,2)}')
+
+            buy_p = result_df[:1]['Buying_Price'].iloc[0]
+            st.write(f'*Buying Price(today):* {round(buy_p,2)}')
+
+            sell_p = result_df[:1]['Exit_safe_price'].iloc[0]
+            st.write(f'*Safe Exit Selling Price:* {round(sell_p,2)}')
+
+    elif (investment_range == 'Low' and duration == 'Short-term' and 'Finance' in sectors_of_interest):
+        with st.spinner('Loading...'):
+            time.sleep(2)  # Simulating some processing time, replace with actual data processing
+
+            start = datetime.date(2019, 1, 1)
+            end_f = datetime.date.today()
+            end= end_f - timedelta(days=1)
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
+            tickers = stock_df["Company Name"]
+            yesterday = end_f - timedelta(days=2)
+            array = ['YESBANK.NS',
+                    'UJJIVANSFB.NS',
+                    'UCOBANK.NS',
+                    'MAHABANK.NS',
+                    'CENTRALBK.NS',
+                    'PSB.NS',
+                    'IOB.NS',
+                    'EDELWEISS.NS',
+                    'IDFCFIRSTB.NS',
+                    'IDBI.NS',
+                    'JMFINANCIL.NS' ]
+
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            symb_list = []
+            for i in array:
+                val = dict_csv.get(i)
+                symb_list.append(val)
+
+            data = yf.download(array, start=yesterday, end=end)
+            data = data['Close']
+            data.reset_index(inplace=True)
+            melted_data = pd.melt(data, id_vars=['Date'], value_vars=array, var_name='Ticker', value_name='Price')
+
+            sorted_data = melted_data.sort_values(by='Price', ascending=True)
+
+            new_t = []
+            for i in sorted_data['Ticker']:
+                new_t.append(i)
+
+            result_df = pd.DataFrame(columns=['Ticker', 'PredictedProfit', 'Buying_Price', 'Exit_safe_price'])
+
+            a = new_t
+            period = int(0.03 * 365)
+
+            for i in a:
+                data = yf.download(i, start=start, end=end)
+                data.reset_index(inplace=True)
+                n_years = 0.03
+                period = int(n_years * 365)
+                df_train = data[['Date', 'Close']]
+                df_train = df_train.rename(columns={"Date": "ds", "Close": "y"})  # rename columns
+
+                m = Prophet()
+                m.fit(df_train)
+                future = m.make_future_dataframe(periods=period)
+                forecast = m.predict(future)
+                forecast['ds'] = pd.to_datetime(forecast['ds']).dt.date
+                end = date.today()
+
+                filtered_df = forecast[forecast['ds'] > end_f]
+                maxx_pred = filtered_df['yhat_upper'].max()
+                a = sorted_data[sorted_data['Ticker'] == i]
+                predicted_profit = maxx_pred - a['Price'].iloc[0]
+
+                buy_price = sorted_data[sorted_data["Ticker"] == i]['Price'].iloc[0]
+                result_df.loc[len(result_df)] = [i, predicted_profit, buy_price, maxx_pred]
+            result_df=result_df.sort_values(by='PredictedProfit', ascending=False)
+
+            os.environ["REPLICATE_API_TOKEN"] = "r8_drcPJJI0QkgcMSShXbRc9WmbtQdpjdV2e7nJv"
+            pre_prompt = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
+            input=result_df[:1]
+            prompt_input = f'...Generate a phrase showcasing the bank as a stock to invest for a {period} days range.provide response to just this and nothing else'
+
+            # Generate LLM response
+            output = replicate.run('a16z-infra/llama13b-v2-chat:df7690f1994d94e96ad9d568eac121aecf50684a0b0963b25a41cc40061269e5', # LLM model
+                                    input={"prompt": f"{pre_prompt} {input} {prompt_input} Assistant: ", # Prompts
+                                    "temperature":0.2, "top_p":0.9, "max_length":250, "repetition_penalty":1})
+            
+            full_response = ""
+
+            for item in output:
+                full_response += item
+
+            st.success(full_response)
+            
+            st.write("## Result Summary")
+            st.write(result_df.reset_index(drop=True))
+
+            st.write('## Best Buying option in Finance sector')
+            cname = result_df[:1]['Ticker'].iloc[0]
+            st.write(f"*Company Name:* {cname}")
+
+            profit = result_df[:1]['PredictedProfit'].iloc[0]
+            st.write(f'*Predicted Profit:* {round(profit,2)}')
+
+            buy_p = result_df[:1]['Buying_Price'].iloc[0]
+            st.write(f'*Buying Price(today):* {round(buy_p,2)}')
+
+            sell_p = result_df[:1]['Exit_safe_price'].iloc[0]
+            st.write(f'*Safe Exit Selling Price:* {round(sell_p,2)}')
+
+
+
+    elif (investment_range == 'Medium' and duration == 'Mid-term' and 'Finance' in sectors_of_interest):
+         with st.spinner('Loading...'):
+            time.sleep(2)  # Simulating some processing time, replace with actual data processing
+
+            start = datetime.date(2019, 1, 1)
+            end_f = datetime.date.today()
+            end= end_f - timedelta(days=1)
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
+            tickers = stock_df["Company Name"]
+            yesterday = end_f - timedelta(days=2)
+            array = ['PNB.NS',
+                    'DCBBANK.NS',
+                    'BANKINDIA.NS',
+                    'CUB.NS',
+                    'J&KBANK.NS',
+                    'UNIONBANK.NS',
+                    'FEDERALBNK.NS',
+                    'MANAPPURAM.NS',
+                    'KARURVYSYA.NS',
+                    'ABCAPITAL.NS',
+                    'BANDHANBNK.NS',
+                    'KTKBANK.NS',
+                    'RBLBANK.NS',
+                    'BANKBARODA.NS',
+                    'M&MFIN.NS',
+                    'FINOPB.NS',
+                    'CSBBANK.NS',
+                    'PFC.NS',
+                    'INDIANB.NS',
+                    'ICICIPRULI.NS',
+                    'AUBANK.NS',
+                    'CANBK.NS',
+                    'IIFL.NS',
+                    'PNBHOUSING.NS',
+                    'SBIN.NS' ]
+
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            symb_list = []
+            for i in array:
+                val = dict_csv.get(i)
+                symb_list.append(val)
+
+            data = yf.download(array, start=yesterday, end=end)
+            data = data['Close']
+            data.reset_index(inplace=True)
+            melted_data = pd.melt(data, id_vars=['Date'], value_vars=array, var_name='Ticker', value_name='Price')
+
+            sorted_data = melted_data.sort_values(by='Price', ascending=True)
+
+            new_t = []
+            for i in sorted_data['Ticker']:
+                new_t.append(i)
+
+            result_df = pd.DataFrame(columns=['Ticker', 'PredictedProfit', 'Buying_Price', 'Exit_safe_price'])
+
+            a = new_t
+            for i in a:
+                data = yf.download(i, start=start, end=end)
+                data.reset_index(inplace=True)
+                n_years = 0.5
+                period = int(n_years * 365)
+                df_train = data[['Date', 'Close']]
+                df_train = df_train.rename(columns={"Date": "ds", "Close": "y"})  # rename columns
+
+                m = Prophet()
+                m.fit(df_train)
+                future = m.make_future_dataframe(periods=period)
+                forecast = m.predict(future)
+                forecast['ds'] = pd.to_datetime(forecast['ds']).dt.date
+                end = date.today()
+
+                filtered_df = forecast[forecast['ds'] > end_f]
+                maxx_pred = filtered_df['yhat_upper'].max()
+                a = sorted_data[sorted_data['Ticker'] == i]
+                predicted_profit = maxx_pred - a['Price'].iloc[0]
+
+                buy_price = sorted_data[sorted_data["Ticker"] == i]['Price'].iloc[0]
+                result_df.loc[len(result_df)] = [i, predicted_profit, buy_price, maxx_pred]
+            result_df=result_df.sort_values(by='PredictedProfit', ascending=False)
+            os.environ["REPLICATE_API_TOKEN"] = "r8_drcPJJI0QkgcMSShXbRc9WmbtQdpjdV2e7nJv"
+            pre_prompt = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
+            input=result_df[:1]
+            prompt_input = '...Generate a phrase showcasing the bank as a stock to invest for a 6month range.provide response to just this and nothing else'
+
+            # Generate LLM response
+            output = replicate.run('a16z-infra/llama13b-v2-chat:df7690f1994d94e96ad9d568eac121aecf50684a0b0963b25a41cc40061269e5', # LLM model
+                                    input={"prompt": f"{pre_prompt} {input} {prompt_input} Assistant: ", # Prompts
+                                    "temperature":0.2, "top_p":0.9, "max_length":300, "repetition_penalty":1})
+            
+            full_response = ""
+
+            for item in output:
+                full_response += item
+
+            st.success(full_response)
+            
+            st.write("## Result Summary")
+            st.write(result_df.reset_index(drop=True))
+
+            st.write('## Best Buying option in Finance sector')
+            cname = result_df[:1]['Ticker'].iloc[0]
+            st.write(f"*Company Name:* {cname}")
+
+            profit = result_df[:1]['PredictedProfit'].iloc[0]
+            st.write(f'*Predicted Profit:* {round(profit,2)}')
+
+            buy_p = result_df[:1]['Buying_Price'].iloc[0]
+            st.write(f'*Buying Price(today):* {round(buy_p,2)}')
+
+            sell_p = result_df[:1]['Exit_safe_price'].iloc[0]
+            st.write(f'*Safe Exit Selling Price:* {round(sell_p,2)}')
+
+    elif (investment_range == 'Medium' and duration == 'Long-term' and 'Finance' in sectors_of_interest):
+        with st.spinner('Loading...'):
+            time.sleep(2)  # Simulating some processing time, replace with actual data processing
+
+            start = datetime.date(2019, 1, 1)
+            end_f = datetime.date.today()
+            end= end_f - timedelta(days=1)
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
+            tickers = stock_df["Company Name"]
+            yesterday = end_f - timedelta(days=2)
+            array = ['PNB.NS',
+                    'DCBBANK.NS',
+                    'BANKINDIA.NS',
+                    'CUB.NS',
+                    'J&KBANK.NS',
+                    'UNIONBANK.NS',
+                    'FEDERALBNK.NS',
+                    'MANAPPURAM.NS',
+                    'KARURVYSYA.NS',
+                    'ABCAPITAL.NS',
+                    'BANDHANBNK.NS',
+                    'KTKBANK.NS',
+                    'RBLBANK.NS',
+                    'BANKBARODA.NS',
+                    'M&MFIN.NS',
+                    'FINOPB.NS',
+                    'CSBBANK.NS',
+                    'PFC.NS',
+                    'INDIANB.NS',
+                    'ICICIPRULI.NS',
+                    'AUBANK.NS',
+                    'CANBK.NS',
+                    'IIFL.NS',
+                    'PNBHOUSING.NS',
+                    'SBIN.NS' ]
+
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            symb_list = []
+            for i in array:
+                val = dict_csv.get(i)
+                symb_list.append(val)
+
+            data = yf.download(array, start=yesterday, end=end)
+            data = data['Close']
+            data.reset_index(inplace=True)
+            melted_data = pd.melt(data, id_vars=['Date'], value_vars=array, var_name='Ticker', value_name='Price')
+
+            sorted_data = melted_data.sort_values(by='Price', ascending=True)
+
+            new_t = []
+            for i in sorted_data['Ticker']:
+                new_t.append(i)
+
+            result_df = pd.DataFrame(columns=['Ticker', 'PredictedProfit', 'Buying_Price', 'Exit_safe_price'])
+
+            a = new_t
+            for i in a:
+                data = yf.download(i, start=start, end=end)
+                data.reset_index(inplace=True)
+                n_years = 1.5
+                period = int(n_years * 365)
+                df_train = data[['Date', 'Close']]
+                df_train = df_train.rename(columns={"Date": "ds", "Close": "y"})  # rename columns
+
+                m = Prophet()
+                m.fit(df_train)
+                future = m.make_future_dataframe(periods=period)
+                forecast = m.predict(future)
+                forecast['ds'] = pd.to_datetime(forecast['ds']).dt.date
+                end = date.today()
+
+                filtered_df = forecast[forecast['ds'] > end_f]
+                maxx_pred = filtered_df['yhat_upper'].max()
+                a = sorted_data[sorted_data['Ticker'] == i]
+                predicted_profit = maxx_pred - a['Price'].iloc[0]
+
+                buy_price = sorted_data[sorted_data["Ticker"] == i]['Price'].iloc[0]
+                result_df.loc[len(result_df)] = [i, predicted_profit, buy_price, maxx_pred]
+            result_df=result_df.sort_values(by='PredictedProfit', ascending=False)
+
+            os.environ["REPLICATE_API_TOKEN"] = "r8_drcPJJI0QkgcMSShXbRc9WmbtQdpjdV2e7nJv"
+            pre_prompt = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
+            input=result_df[:1]
+            prompt_input = f'...Generate a phrase showcasing the bank as a stock to invest for a {period} days range.provide response to just this and nothing else'
+
+            # Generate LLM response
+            output = replicate.run('a16z-infra/llama13b-v2-chat:df7690f1994d94e96ad9d568eac121aecf50684a0b0963b25a41cc40061269e5', # LLM model
+                                    input={"prompt": f"{pre_prompt} {input} {prompt_input} Assistant: ", # Prompts
+                                    "temperature":0.2, "top_p":0.9, "max_length":250, "repetition_penalty":1})
+            
+            full_response = ""
+
+            for item in output:
+                full_response += item
+
+            st.success(full_response)
+            
+            st.write("## Result Summary")
+            st.write(result_df.reset_index(drop=True))
+
+            st.write('## Best Buying option in Finance sector')
+            cname = result_df[:1]['Ticker'].iloc[0]
+            st.write(f"*Company Name:* {cname}")
+
+            profit = result_df[:1]['PredictedProfit'].iloc[0]
+            st.write(f'*Predicted Profit:* {round(profit,2)}')
+
+            buy_p = result_df[:1]['Buying_Price'].iloc[0]
+            st.write(f'*Buying Price(today):* {round(buy_p,2)}')
+
+            sell_p = result_df[:1]['Exit_safe_price'].iloc[0]
+            st.write(f'*Safe Exit Selling Price:* {round(sell_p,2)}')
+
+    elif (investment_range == 'Medium' and duration == 'Short-term' and 'Finance' in sectors_of_interest):
+        with st.spinner('Loading...'):
+            time.sleep(2)  # Simulating some processing time, replace with actual data processing
+
+            start = datetime.date(2019, 1, 1)
+            end_f = datetime.date.today()
+            end= end_f - timedelta(days=1)
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
+            tickers = stock_df["Company Name"]
+            yesterday = end_f - timedelta(days=2)
+            array = ['PNB.NS',
+                    'DCBBANK.NS',
+                    'BANKINDIA.NS',
+                    'CUB.NS',
+                    'J&KBANK.NS',
+                    'UNIONBANK.NS',
+                    'FEDERALBNK.NS',
+                    'MANAPPURAM.NS',
+                    'KARURVYSYA.NS',
+                    'ABCAPITAL.NS',
+                    'BANDHANBNK.NS',
+                    'KTKBANK.NS',
+                    'RBLBANK.NS',
+                    'BANKBARODA.NS',
+                    'M&MFIN.NS',
+                    'FINOPB.NS',
+                    'CSBBANK.NS',
+                    'PFC.NS',
+                    'INDIANB.NS',
+                    'ICICIPRULI.NS',
+                    'AUBANK.NS',
+                    'CANBK.NS',
+                    'IIFL.NS',
+                    'PNBHOUSING.NS',
+                    ]
+
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            symb_list = []
+            for i in array:
+                val = dict_csv.get(i)
+                symb_list.append(val)
+
+            data = yf.download(array, start=yesterday, end=end)
+            data = data['Close']
+            data.reset_index(inplace=True)
+            melted_data = pd.melt(data, id_vars=['Date'], value_vars=array, var_name='Ticker', value_name='Price')
+
+            sorted_data = melted_data.sort_values(by='Price', ascending=True)
+
+            new_t = []
+            for i in sorted_data['Ticker']:
+                new_t.append(i)
+
+            result_df = pd.DataFrame(columns=['Ticker', 'PredictedProfit', 'Buying_Price', 'Exit_safe_price'])
+
+            a = new_t
+            period = int(0.03 * 365)
+
+            for i in a:
+                data = yf.download(i, start=start, end=end)
+                data.reset_index(inplace=True)
+                n_years = 0.03
+                period = int(n_years * 365)
+                df_train = data[['Date', 'Close']]
+                df_train = df_train.rename(columns={"Date": "ds", "Close": "y"})  # rename columns
+
+                m = Prophet()
+                m.fit(df_train)
+                future = m.make_future_dataframe(periods=period)
+                forecast = m.predict(future)
+                forecast['ds'] = pd.to_datetime(forecast['ds']).dt.date
+                end = date.today()
+
+                filtered_df = forecast[forecast['ds'] > end_f]
+                maxx_pred = filtered_df['yhat_upper'].max()
+                a = sorted_data[sorted_data['Ticker'] == i]
+                predicted_profit = maxx_pred - a['Price'].iloc[0]
+
+                buy_price = sorted_data[sorted_data["Ticker"] == i]['Price'].iloc[0]
+                result_df.loc[len(result_df)] = [i, predicted_profit, buy_price, maxx_pred]
+            result_df=result_df.sort_values(by='PredictedProfit', ascending=False)
+
+            os.environ["REPLICATE_API_TOKEN"] = "r8_drcPJJI0QkgcMSShXbRc9WmbtQdpjdV2e7nJv"
+            pre_prompt = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
+            input=result_df[:1]
+            prompt_input = f'...Generate a phrase showcasing the bank as a stock to invest for a {period} days range.provide response to just this and nothing else'
+
+            # Generate LLM response
+            output = replicate.run('a16z-infra/llama13b-v2-chat:df7690f1994d94e96ad9d568eac121aecf50684a0b0963b25a41cc40061269e5', # LLM model
+                                    input={"prompt": f"{pre_prompt} {input} {prompt_input} Assistant: ", # Prompts
+                                    "temperature":0.2, "top_p":0.9, "max_length":250, "repetition_penalty":1})
+            
+            full_response = ""
+
+            for item in output:
+                full_response += item
+
+            st.success(full_response)
+            
+            st.write("## Result Summary")
+            st.write(result_df.reset_index(drop=True))
+
+            st.write('## Best Buying option in Finance sector')
+            cname = result_df[:1]['Ticker'].iloc[0]
+            st.write(f"*Company Name:* {cname}")
+
+            profit = result_df[:1]['PredictedProfit'].iloc[0]
+            st.write(f'*Predicted Profit:* {round(profit,2)}')
+
+            buy_p = result_df[:1]['Buying_Price'].iloc[0]
+            st.write(f'*Buying Price(today):* {round(buy_p,2)}')
+
+            sell_p = result_df[:1]['Exit_safe_price'].iloc[0]
+            st.write(f'*Safe Exit Selling Price:* {round(sell_p,2)}')
+
+
+
+    elif (investment_range == 'High' and duration == 'Mid-term' and 'Finance' in sectors_of_interest):
+         with st.spinner('Loading...'):
+            time.sleep(2)  # Simulating some processing time, replace with actual data processing
+
+            start = datetime.date(2019, 1, 1)
+            end_f = datetime.date.today()
+            end= end_f - timedelta(days=1)
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
+            tickers = stock_df["Company Name"]
+            yesterday = end_f - timedelta(days=2)
+            array = ['SBIN.NS' ,
+                    'MFSL.NS',
+                    'ICICIBANK.NS',
+                    'AXISBANK.NS',
+                    'MUTHOOTFIN.NS',
+                    'BAJAJFINSV.NS',
+                    'MOTILALOFS.NS',
+                    'KOTAKBANK.NS',
+                    'HDFCAMC.NS',
+                    'SUNDARMFIN.NS',
+                    'BAJAJHLDNG.NS' ]
+
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            symb_list = []
+            for i in array:
+                val = dict_csv.get(i)
+                symb_list.append(val)
+
+            data = yf.download(array, start=yesterday, end=end)
+            data = data['Close']
+            data.reset_index(inplace=True)
+            melted_data = pd.melt(data, id_vars=['Date'], value_vars=array, var_name='Ticker', value_name='Price')
+
+            sorted_data = melted_data.sort_values(by='Price', ascending=True)
+
+            new_t = []
+            for i in sorted_data['Ticker']:
+                new_t.append(i)
+
+            result_df = pd.DataFrame(columns=['Ticker', 'PredictedProfit', 'Buying_Price', 'Exit_safe_price'])
+
+            a = new_t
+            for i in a:
+                data = yf.download(i, start=start, end=end)
+                data.reset_index(inplace=True)
+                n_years = 0.5
+                period = int(n_years * 365)
+                df_train = data[['Date', 'Close']]
+                df_train = df_train.rename(columns={"Date": "ds", "Close": "y"})  # rename columns
+
+                m = Prophet()
+                m.fit(df_train)
+                future = m.make_future_dataframe(periods=period)
+                forecast = m.predict(future)
+                forecast['ds'] = pd.to_datetime(forecast['ds']).dt.date
+                end = date.today()
+
+                filtered_df = forecast[forecast['ds'] > end_f]
+                maxx_pred = filtered_df['yhat_upper'].max()
+                a = sorted_data[sorted_data['Ticker'] == i]
+                predicted_profit = maxx_pred - a['Price'].iloc[0]
+
+                buy_price = sorted_data[sorted_data["Ticker"] == i]['Price'].iloc[0]
+                result_df.loc[len(result_df)] = [i, predicted_profit, buy_price, maxx_pred]
+            result_df=result_df.sort_values(by='PredictedProfit', ascending=False)
+            os.environ["REPLICATE_API_TOKEN"] = "r8_drcPJJI0QkgcMSShXbRc9WmbtQdpjdV2e7nJv"
+            pre_prompt = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
+            input=result_df[:1]
+            prompt_input = '...Generate a phrase showcasing the bank as a stock to invest for a 6month range.provide response to just this and nothing else'
+
+            # Generate LLM response
+            output = replicate.run('a16z-infra/llama13b-v2-chat:df7690f1994d94e96ad9d568eac121aecf50684a0b0963b25a41cc40061269e5', # LLM model
+                                    input={"prompt": f"{pre_prompt} {input} {prompt_input} Assistant: ", # Prompts
+                                    "temperature":0.2, "top_p":0.9, "max_length":300, "repetition_penalty":1})
+            
+            full_response = ""
+
+            for item in output:
+                full_response += item
+
+            st.success(full_response)
+            
+            st.write("## Result Summary")
+            st.write(result_df.reset_index(drop=True))
+
+            st.write('## Best Buying option in Finance sector')
+            cname = result_df[:1]['Ticker'].iloc[0]
+            st.write(f"*Company Name:* {cname}")
+
+            profit = result_df[:1]['PredictedProfit'].iloc[0]
+            st.write(f'*Predicted Profit:* {round(profit,2)}')
+
+            buy_p = result_df[:1]['Buying_Price'].iloc[0]
+            st.write(f'*Buying Price(today):* {round(buy_p,2)}')
+
+            sell_p = result_df[:1]['Exit_safe_price'].iloc[0]
+            st.write(f'*Safe Exit Selling Price:* {round(sell_p,2)}')
+
+    elif (investment_range == 'High' and duration == 'Long-term' and 'Finance' in sectors_of_interest):
+        with st.spinner('Loading...'):
+            time.sleep(2)  # Simulating some processing time, replace with actual data processing
+
+            start = datetime.date(2019, 1, 1)
+            end_f = datetime.date.today()
+            end= end_f - timedelta(days=1)
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
+            tickers = stock_df["Company Name"]
+            yesterday = end_f - timedelta(days=2)
+            array = ['SBIN.NS' ,
+                    'MFSL.NS',
+                    'ICICIBANK.NS',
+                    'AXISBANK.NS',
+                    'MUTHOOTFIN.NS',
+                    'BAJAJFINSV.NS',
+                    'MOTILALOFS.NS',
+                    'KOTAKBANK.NS',
+                    'HDFCAMC.NS',
+                    'SUNDARMFIN.NS',
+                    'BAJAJHLDNG.NS' ]
+
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            symb_list = []
+            for i in array:
+                val = dict_csv.get(i)
+                symb_list.append(val)
+
+            data = yf.download(array, start=yesterday, end=end)
+            data = data['Close']
+            data.reset_index(inplace=True)
+            melted_data = pd.melt(data, id_vars=['Date'], value_vars=array, var_name='Ticker', value_name='Price')
+
+            sorted_data = melted_data.sort_values(by='Price', ascending=True)
+
+            new_t = []
+            for i in sorted_data['Ticker']:
+                new_t.append(i)
+
+            result_df = pd.DataFrame(columns=['Ticker', 'PredictedProfit', 'Buying_Price', 'Exit_safe_price'])
+
+            a = new_t
+            for i in a:
+                data = yf.download(i, start=start, end=end)
+                data.reset_index(inplace=True)
+                n_years = 1.5
+                period = int(n_years * 365)
+                df_train = data[['Date', 'Close']]
+                df_train = df_train.rename(columns={"Date": "ds", "Close": "y"})  # rename columns
+
+                m = Prophet()
+                m.fit(df_train)
+                future = m.make_future_dataframe(periods=period)
+                forecast = m.predict(future)
+                forecast['ds'] = pd.to_datetime(forecast['ds']).dt.date
+                end = date.today()
+
+                filtered_df = forecast[forecast['ds'] > end_f]
+                maxx_pred = filtered_df['yhat_upper'].max()
+                a = sorted_data[sorted_data['Ticker'] == i]
+                predicted_profit = maxx_pred - a['Price'].iloc[0]
+
+                buy_price = sorted_data[sorted_data["Ticker"] == i]['Price'].iloc[0]
+                result_df.loc[len(result_df)] = [i, predicted_profit, buy_price, maxx_pred]
+            result_df=result_df.sort_values(by='PredictedProfit', ascending=False)
+
+            os.environ["REPLICATE_API_TOKEN"] = "r8_drcPJJI0QkgcMSShXbRc9WmbtQdpjdV2e7nJv"
+            pre_prompt = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
+            input=result_df[:1]
+            prompt_input = f'...Generate a phrase showcasing the bank as a stock to invest for a {period} days range.provide response to just this and nothing else'
+
+            # Generate LLM response
+            output = replicate.run('a16z-infra/llama13b-v2-chat:df7690f1994d94e96ad9d568eac121aecf50684a0b0963b25a41cc40061269e5', # LLM model
+                                    input={"prompt": f"{pre_prompt} {input} {prompt_input} Assistant: ", # Prompts
+                                    "temperature":0.2, "top_p":0.9, "max_length":250, "repetition_penalty":1})
+            
+            full_response = ""
+
+            for item in output:
+                full_response += item
+
+            st.success(full_response)
+            
+            st.write("## Result Summary")
+            st.write(result_df.reset_index(drop=True))
+
+            st.write('## Best Buying option in Finance sector')
+            cname = result_df[:1]['Ticker'].iloc[0]
+            st.write(f"*Company Name:* {cname}")
+
+            profit = result_df[:1]['PredictedProfit'].iloc[0]
+            st.write(f'*Predicted Profit:* {round(profit,2)}')
+
+            buy_p = result_df[:1]['Buying_Price'].iloc[0]
+            st.write(f'*Buying Price(today):* {round(buy_p,2)}')
+
+            sell_p = result_df[:1]['Exit_safe_price'].iloc[0]
+            st.write(f'*Safe Exit Selling Price:* {round(sell_p,2)}')
+
+    elif (investment_range == 'High' and duration == 'Short-term' and 'Finance' in sectors_of_interest):
+        with st.spinner('Loading...'):
+            time.sleep(2)  # Simulating some processing time, replace with actual data processing
+
+            start = datetime.date(2019, 1, 1)
+            end_f = datetime.date.today()
+            end= end_f - timedelta(days=1)
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
+            tickers = stock_df["Company Name"]
+            yesterday = end_f - timedelta(days=2)
+            array = ['SBIN.NS' ,
+                    'MFSL.NS',
+                    'ICICIBANK.NS',
+                    'AXISBANK.NS',
+                    'MUTHOOTFIN.NS',
+                    'BAJAJFINSV.NS',
+                    'MOTILALOFS.NS',
+                    'KOTAKBANK.NS',
+                    'HDFCAMC.NS',
+                    'SUNDARMFIN.NS',
+                    'BAJAJHLDNG.NS' ]
+
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            symb_list = []
+            for i in array:
+                val = dict_csv.get(i)
+                symb_list.append(val)
+
+            data = yf.download(array, start=yesterday, end=end)
+            data = data['Close']
+            data.reset_index(inplace=True)
+            melted_data = pd.melt(data, id_vars=['Date'], value_vars=array, var_name='Ticker', value_name='Price')
+
+            sorted_data = melted_data.sort_values(by='Price', ascending=True)
+
+            new_t = []
+            for i in sorted_data['Ticker']:
+                new_t.append(i)
+
+            result_df = pd.DataFrame(columns=['Ticker', 'PredictedProfit', 'Buying_Price', 'Exit_safe_price'])
+
+            a = new_t
+            period = int(0.03 * 365)
+
+            for i in a:
+                data = yf.download(i, start=start, end=end)
+                data.reset_index(inplace=True)
+                n_years = 0.03
+                period = int(n_years * 365)
+                df_train = data[['Date', 'Close']]
+                df_train = df_train.rename(columns={"Date": "ds", "Close": "y"})  # rename columns
+
+                m = Prophet()
+                m.fit(df_train)
+                future = m.make_future_dataframe(periods=period)
+                forecast = m.predict(future)
+                forecast['ds'] = pd.to_datetime(forecast['ds']).dt.date
+                end = date.today()
+
+                filtered_df = forecast[forecast['ds'] > end_f]
+                maxx_pred = filtered_df['yhat_upper'].max()
+                a = sorted_data[sorted_data['Ticker'] == i]
+                predicted_profit = maxx_pred - a['Price'].iloc[0]
+
+                buy_price = sorted_data[sorted_data["Ticker"] == i]['Price'].iloc[0]
+                result_df.loc[len(result_df)] = [i, predicted_profit, buy_price, maxx_pred]
+            result_df=result_df.sort_values(by='PredictedProfit', ascending=False)
+
+            os.environ["REPLICATE_API_TOKEN"] = "r8_drcPJJI0QkgcMSShXbRc9WmbtQdpjdV2e7nJv"
+            pre_prompt = "You are a helpful assistant. You do not respond as 'User' or pretend to be 'User'. You only respond once as 'Assistant'."
+            input=result_df[:1]
+            prompt_input = f'...Generate a phrase showcasing the bank as a stock to invest for a {period} days range.provide response to just this and nothing else'
+
+            # Generate LLM response
+            output = replicate.run('a16z-infra/llama13b-v2-chat:df7690f1994d94e96ad9d568eac121aecf50684a0b0963b25a41cc40061269e5', # LLM model
+                                    input={"prompt": f"{pre_prompt} {input} {prompt_input} Assistant: ", # Prompts
+                                    "temperature":0.2, "top_p":0.9, "max_length":250, "repetition_penalty":1})
+            
+            full_response = ""
+
+            for item in output:
+                full_response += item
+
+            st.success(full_response)
+            
+            st.write("## Result Summary")
+            st.write(result_df.reset_index(drop=True))
+
+            st.write('## Best Buying option in Finance sector')
+            cname = result_df[:1]['Ticker'].iloc[0]
+            st.write(f"*Company Name:* {cname}")
+
+            profit = result_df[:1]['PredictedProfit'].iloc[0]
+            st.write(f'*Predicted Profit:* {round(profit,2)}')
+
+            buy_p = result_df[:1]['Buying_Price'].iloc[0]
+            st.write(f'*Buying Price(today):* {round(buy_p,2)}')
+
+            sell_p = result_df[:1]['Exit_safe_price'].iloc[0]
+            st.write(f'*Safe Exit Selling Price:* {round(sell_p,2)}')
+    else:
+        st.write("poda")
+        st.warning("## PLEASE SELECT All INPUT FIELDS")
         
-        full_response = ""
 
-        for item in output:
-            full_response += item
 
-        st.success(full_response)
-        
-        st.write("## Result Summary")
-        st.write(result_df.reset_index(drop=True))
-
-        st.write('## Best Buying option in Finance sector')
-        cname = result_df[:1]['Ticker'].iloc[0]
-        st.write(f"*Company Name:* {cname}")
-
-        profit = result_df[:1]['PredictedProfit'].iloc[0]
-        st.write(f'*Predicted Profit:* {round(profit,2)}')
-
-        buy_p = result_df[:1]['Buying_Price'].iloc[0]
-        st.write(f'*Buying Price(today):* {round(buy_p,2)}')
-
-        sell_p = result_df[:1]['Exit_safe_price'].iloc[0]
-        st.write(f'*Safe Exit Selling Price:* {round(sell_p,2)}')
 elif(selected=="Multifactor Market Dynamics"):
 
     st.markdown('<h1 style="text-align:center; color:Gray;">Trade Based on News Headlines Using NLP</h1>', unsafe_allow_html=True)
