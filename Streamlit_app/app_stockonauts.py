@@ -56,7 +56,7 @@ add_meta_tag()
 today = date.today() 
 st.write('''# Real Time Market Insights ''')
 # Sidebar
-st.sidebar.image("./static/Stockonauts.png", width=400,
+st.sidebar.image("./Streamlit_app/static/Stockonauts.png", width=400,
                  use_column_width="auto")
 
 
