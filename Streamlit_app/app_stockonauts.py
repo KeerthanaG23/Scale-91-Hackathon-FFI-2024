@@ -1,6 +1,6 @@
 from matplotlib.pyplot import axis
 import matplotlib.pyplot as plt
-
+from yahoo_fin import stock_info
 
 import streamlit as st  
 from streamlit_option_menu import option_menu 
@@ -56,7 +56,7 @@ add_meta_tag()
 today = date.today() 
 st.write('''# Real Time Market Insights ''')
 # Sidebar
-st.sidebar.image("./Streamlit_app/static/Stockonauts.png", width=400,
+st.sidebar.image("./static/Stockonauts.png", width=400,
                  use_column_width="auto")
 
 
@@ -69,7 +69,7 @@ start = st.sidebar.date_input('Start', datetime.date(2019, 1, 1))  # start date 
 end = st.sidebar.date_input('End', datetime.date.today())
 
 
-stock_df = pd.read_csv("./Streamlit_app/datasets/TickersData.csv")
+stock_df = pd.read_csv("./datasets/TickersData.csv")
 #print(stock_df)
 if(selected == 'Comparative Analysis of Stock Performances'):
     st.subheader("Comparative Analysis of Stock Performances")
@@ -81,7 +81,7 @@ if(selected == 'Comparative Analysis of Stock Performances'):
     with st.spinner('Loading...'):
         time.sleep(2)
        # st.success('Loaded')
-    dict_csv = pd.read_csv('./Streamlit_app/datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+    dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
     # print(dict_csv)
     symb_list = [] 
     for i in dropdown:  
@@ -160,7 +160,7 @@ elif(selected == 'Live Stock Prices'):
     with st.spinner('Loading...'):  # spinner while loading
         time.sleep(2)
 
-        dict_csv = pd.read_csv('./Streamlit_app/datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]  # read csv file
+        dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]  # read csv file
         symb_list = []  # list for storing symbols
 
         val = dict_csv.get(a)  # get symbol from csv file
@@ -232,7 +232,7 @@ elif(selected == 'Stock Forecast'):  # if user selects 'Stock Prediction'
     a = st.selectbox('Pick a Company', tickers)
     with st.spinner('Loading...'):  # spinner while loading
              time.sleep(2)
-    dict_csv = pd.read_csv('./Streamlit_app/datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]  # read csv file
+    dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]  # read csv file
     symb_list = []  # list for storing symbols
     val = dict_csv.get(a)  # get symbol from csv file
     symb_list.append(val)  # append symbol to list
@@ -371,7 +371,7 @@ elif(selected=="Algorithmic Trading"):
         if len(selected_options)==0:
             st.write("Opps! We couldn't find that.")
         # st.write('Selected options:', selected_options)
-        dict_csv = pd.read_csv('./Streamlit_app/datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+        dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
         val = dict_csv.get(selected_options)  
         symb=val
         # st.write(symb[:])
@@ -492,21 +492,41 @@ elif(selected=="Algorithmic Trading"):
         col2.subheader("Valuation Metric")
         col2.write("Low P/B Ratio - Undervaluation, Potential Bargain, Financial Distress, Value Investing Opportunity")
         col2.write("High P/B Ratio - Market Confidence, Expectations of Future Growth, Industry Comparison, Potential Overvaluation")
-        col2.write("Banks with higher Price-to-Book (P/B) Ratios are viewed favorably, indicating investor confidence and positive growth expectations. The positive difference between Net Interest Margin (NIM) and Non-Performing Assets (NPA) underscores effective income generation and risk management. A combination of a high P/B Ratio and a positive NIM-NPA difference suggests financial robustness, making these banks potentially attractive investments. However, thorough analysis considering external factors is crucial. Diversification across banks with varying P/B Ratios and NIM-NPA differences can mitigate risks. Investors should also monitor regulatory conditions and economic trends for informed decision-making.")
+        col2.write("Banks with higher Price-to-Book (P/B) Ratios are viewed favorably, indicating investor confidence and positive growth expectations. The positive difference between Net Interest Margin (NIM) and Non-Performing Assets (NPA) underscores effective income generation and risk management. A combination of a low P/B Ratio and a positive NIM-NPA difference suggests financial robustness, making these banks potentially attractive investments. However, thorough analysis considering external factors is crucial. Diversification across banks with varying P/B Ratios and NIM-NPA differences can mitigate risks. Investors should also monitor regulatory conditions and economic trends for informed decision-making.")
         max_diff_row = df.loc[df['NIM_NPA_Difference'].idxmax()]
-        col1.subheader("2. Bank with maximum P/B Ratio & Higher NIM, Lower NPA")
+        col1.subheader("2. Bank with minimum P/B Ratio & Higher NIM, Lower NPA")
         col1.success(df[(df['Bank'] == max_diff_row['Bank']) & (df['NIM_NPA_Difference'] > 0)].iloc[0]['Bank'])
 
         def generate_random_sector():
             sectors = ['Technology', 'E-commerce', 'Automotive', 'Healthcare', 'Consumer Goods', 'Beverages']
             return random.choice(sectors)
+        companys=['Apple', 'Microsoft', 'Amazon', 'Google', 'Tesla', 'Facebook', 'Johnson & Johnson', 'Procter & Gamble', 'Intel', 'Coca-Cola',
+                        'IBM', 'General Electric', 'Netflix', 'Ford', 'Oracle', 'Pfizer', 'Walmart', 'Boeing', 'AT&T', 'General Motors',
+                        'Merck', 'Verizon', 'Chevron', 'Cisco', 'PepsiCo']
+
+        sectors = ['Technology', 'E-commerce', 'Automotive', 'Healthcare', 'Consumer Goods', 'Beverages']
+
+        sec_company = []
+        for company in companys:
+            if company in ['Amazon', 'Walmart', 'Alibaba']:
+                sec_company.append('E-commerce')
+            elif company in ['Tesla', 'Ford', 'General Motors']:
+                sec_company.append('Automotive')
+            elif company in ['Johnson & Johnson', 'Pfizer', 'Merck']:
+                sec_company.append('Healthcare')
+            elif company in ['Procter & Gamble', 'Coca-Cola', 'PepsiCo']:
+                sec_company.append('Consumer Goods')
+            elif company in ['Coca-Cola', 'PepsiCo']:
+                sec_company.append('Beverages')
+            else:
+                sec_company.append('Technology')
 
         # Synthetic data for 25 companies
         companies_data = {
             'Company': ['Apple', 'Microsoft', 'Amazon', 'Google', 'Tesla', 'Facebook', 'Johnson & Johnson', 'Procter & Gamble', 'Intel', 'Coca-Cola',
                         'IBM', 'General Electric', 'Netflix', 'Ford', 'Oracle', 'Pfizer', 'Walmart', 'Boeing', 'AT&T', 'General Motors',
                         'Merck', 'Verizon', 'Chevron', 'Cisco', 'PepsiCo'],
-            'Sector': [generate_random_sector() for _ in range(25)],
+            'Sector':  sec_company,
             'P/E Ratio': [random.randint(20, 40) for _ in range(25)],
             'Q1 Earnings': [round(random.uniform(1.5, 5.0), 2) for _ in range(25)],
             'Q2 Earnings': [round(random.uniform(1.5, 5.0), 2) for _ in range(25)],
@@ -541,7 +561,7 @@ elif(selected=="Algorithmic Trading"):
         st.image("https://imgur.com/fEgI9b6.png")
         st.write("The NIFTY 50 index is National Stock Exchange of India's benchmark broad based stock market index for the Indian equity market. NIFTY 50 - This represents the first 50 companies from the NIFTY 100 based on full market capitalisation from the eligible universe to track the performance of companies having large market caps.")
         col1, col2 = st.columns([1, 1])
-        nifty_50 = pd.read_csv('./Streamlit_app/datasets/NIFTY 50.csv',parse_dates=["Date"])
+        nifty_50 = pd.read_csv('./datasets/NIFTY 50.csv',parse_dates=["Date"])
         # nifty_50.head()
         col1.write(nifty_50)
         columns_info = {
@@ -731,12 +751,12 @@ elif(selected=="Algorithmic Trading"):
         st.plotly_chart(fig)
         st.write("Due to reduction in the number of the Coronavirus cases in India, a positive sentiment was generated which translated to gain in the NIFTY index.")
         st.header("Performance of other  Sectoral Indices in 2020")
-        nifty_auto = pd.read_csv('./Streamlit_app/datasets/NIFTY AUTO.csv',parse_dates=["Date"])
-        nifty_bank = pd.read_csv('./Streamlit_app/datasets/NIFTY BANK.csv',parse_dates=["Date"])
-        nifty_fmcg = pd.read_csv('./Streamlit_app/datasets/NIFTY FMCG.csv',parse_dates=["Date"])
-        nifty_IT = pd.read_csv('./Streamlit_app/datasets/NIFTY IT.csv',parse_dates=["Date"])
-        nifty_metal = pd.read_csv('./Streamlit_app/datasets/NIFTY METAL.csv',parse_dates=["Date"])
-        nifty_pharma = pd.read_csv('./Streamlit_app/datasets/NIFTY PHARMA.csv',parse_dates=["Date"])
+        nifty_auto = pd.read_csv('./datasets/NIFTY AUTO.csv',parse_dates=["Date"])
+        nifty_bank = pd.read_csv('./datasets/NIFTY BANK.csv',parse_dates=["Date"])
+        nifty_fmcg = pd.read_csv('./datasets/NIFTY FMCG.csv',parse_dates=["Date"])
+        nifty_IT = pd.read_csv('./datasets/NIFTY IT.csv',parse_dates=["Date"])
+        nifty_metal = pd.read_csv('./datasets/NIFTY METAL.csv',parse_dates=["Date"])
+        nifty_pharma = pd.read_csv('./datasets/NIFTY PHARMA.csv',parse_dates=["Date"])
         nifty_auto_2019 = nifty_auto[nifty_auto['Date'] > '2019-12-31']
         nifty_bank_2019 = nifty_bank[nifty_bank['Date'] > '2019-12-31']
         nifty_fmcg_2019 = nifty_fmcg[nifty_fmcg['Date'] > '2019-12-31']
@@ -827,7 +847,7 @@ elif selected == "Personalized Investment Insights":
             start = datetime.date(2019, 1, 1)
             end_f = datetime.date.today()
             end= end_f - timedelta(days=1)
-            stock_df = pd.read_csv("./Streamlit_app/datasets/TickersData.csv")
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
             tickers = stock_df["Company Name"]
             yesterday = end_f - timedelta(days=2)
             array = ['YESBANK.NS',
@@ -842,7 +862,7 @@ elif selected == "Personalized Investment Insights":
                     'IDBI.NS',
                     'JMFINANCIL.NS']
 
-            dict_csv = pd.read_csv('./Streamlit_app/datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
             symb_list = []
             for i in array:
                 val = dict_csv.get(i)
@@ -925,7 +945,7 @@ elif selected == "Personalized Investment Insights":
             start = datetime.date(2019, 1, 1)
             end_f = datetime.date.today()
             end= end_f - timedelta(days=1)
-            stock_df = pd.read_csv("./Streamlit_app/datasets/TickersData.csv")
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
             tickers = stock_df["Company Name"]
             yesterday = end_f - timedelta(days=2)
             array = ['YESBANK.NS',
@@ -940,7 +960,7 @@ elif selected == "Personalized Investment Insights":
                     'IDBI.NS',
                     'JMFINANCIL.NS' ]
 
-            dict_csv = pd.read_csv('./Streamlit_app/datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
             symb_list = []
             for i in array:
                 val = dict_csv.get(i)
@@ -1024,7 +1044,7 @@ elif selected == "Personalized Investment Insights":
             start = datetime.date(2019, 1, 1)
             end_f = datetime.date.today()
             end= end_f - timedelta(days=1)
-            stock_df = pd.read_csv("./Streamlit_app/datasets/TickersData.csv")
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
             tickers = stock_df["Company Name"]
             yesterday = end_f - timedelta(days=2)
             array = ['YESBANK.NS',
@@ -1039,7 +1059,7 @@ elif selected == "Personalized Investment Insights":
                     'IDBI.NS',
                     'JMFINANCIL.NS' ]
 
-            dict_csv = pd.read_csv('./Streamlit_app/datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
             symb_list = []
             for i in array:
                 val = dict_csv.get(i)
@@ -1127,7 +1147,7 @@ elif selected == "Personalized Investment Insights":
             start = datetime.date(2019, 1, 1)
             end_f = datetime.date.today()
             end= end_f - timedelta(days=1)
-            stock_df = pd.read_csv("./Streamlit_app/datasets/TickersData.csv")
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
             tickers = stock_df["Company Name"]
             yesterday = end_f - timedelta(days=2)
             array = ['PNB.NS',
@@ -1156,7 +1176,7 @@ elif selected == "Personalized Investment Insights":
                     'PNBHOUSING.NS',
                     'SBIN.NS' ]
 
-            dict_csv = pd.read_csv('./Streamlit_app/datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
             symb_list = []
             for i in array:
                 val = dict_csv.get(i)
@@ -1239,7 +1259,7 @@ elif selected == "Personalized Investment Insights":
             start = datetime.date(2019, 1, 1)
             end_f = datetime.date.today()
             end= end_f - timedelta(days=1)
-            stock_df = pd.read_csv("./Streamlit_app/datasets/TickersData.csv")
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
             tickers = stock_df["Company Name"]
             yesterday = end_f - timedelta(days=2)
             array = ['PNB.NS',
@@ -1268,7 +1288,7 @@ elif selected == "Personalized Investment Insights":
                     'PNBHOUSING.NS',
                     'SBIN.NS' ]
 
-            dict_csv = pd.read_csv('./Streamlit_app/datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
             symb_list = []
             for i in array:
                 val = dict_csv.get(i)
@@ -1352,7 +1372,7 @@ elif selected == "Personalized Investment Insights":
             start = datetime.date(2019, 1, 1)
             end_f = datetime.date.today()
             end= end_f - timedelta(days=1)
-            stock_df = pd.read_csv("./Streamlit_app/datasets/TickersData.csv")
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
             tickers = stock_df["Company Name"]
             yesterday = end_f - timedelta(days=2)
             array = ['PNB.NS',
@@ -1381,7 +1401,7 @@ elif selected == "Personalized Investment Insights":
                     'PNBHOUSING.NS',
                     ]
 
-            dict_csv = pd.read_csv('./Streamlit_app/datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
             symb_list = []
             for i in array:
                 val = dict_csv.get(i)
@@ -1469,7 +1489,7 @@ elif selected == "Personalized Investment Insights":
             start = datetime.date(2019, 1, 1)
             end_f = datetime.date.today()
             end= end_f - timedelta(days=1)
-            stock_df = pd.read_csv("./Streamlit_app/datasets/TickersData.csv")
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
             tickers = stock_df["Company Name"]
             yesterday = end_f - timedelta(days=2)
             array = ['SBIN.NS' ,
@@ -1484,7 +1504,7 @@ elif selected == "Personalized Investment Insights":
                     'SUNDARMFIN.NS',
                     'BAJAJHLDNG.NS' ]
 
-            dict_csv = pd.read_csv('./Streamlit_app/datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
             symb_list = []
             for i in array:
                 val = dict_csv.get(i)
@@ -1567,7 +1587,7 @@ elif selected == "Personalized Investment Insights":
             start = datetime.date(2019, 1, 1)
             end_f = datetime.date.today()
             end= end_f - timedelta(days=1)
-            stock_df = pd.read_csv("./Streamlit_app/datasets/TickersData.csv")
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
             tickers = stock_df["Company Name"]
             yesterday = end_f - timedelta(days=2)
             array = ['SBIN.NS' ,
@@ -1582,7 +1602,7 @@ elif selected == "Personalized Investment Insights":
                     'SUNDARMFIN.NS',
                     'BAJAJHLDNG.NS' ]
 
-            dict_csv = pd.read_csv('./Streamlit_app/datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
             symb_list = []
             for i in array:
                 val = dict_csv.get(i)
@@ -1666,7 +1686,7 @@ elif selected == "Personalized Investment Insights":
             start = datetime.date(2019, 1, 1)
             end_f = datetime.date.today()
             end= end_f - timedelta(days=1)
-            stock_df = pd.read_csv("./Streamlit_app/datasets/TickersData.csv")
+            stock_df = pd.read_csv("./datasets/TickersData.csv")
             tickers = stock_df["Company Name"]
             yesterday = end_f - timedelta(days=2)
             array = ['SBIN.NS' ,
@@ -1681,7 +1701,7 @@ elif selected == "Personalized Investment Insights":
                     'SUNDARMFIN.NS',
                     'BAJAJHLDNG.NS' ]
 
-            dict_csv = pd.read_csv('./Streamlit_app/datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
+            dict_csv = pd.read_csv('./datasets/TickersData.csv', header=None, index_col=0).to_dict()[1]
             symb_list = []
             for i in array:
                 val = dict_csv.get(i)
@@ -1874,7 +1894,7 @@ else:
     col1.write(sym[:10])
     # ticker_symbol = col2.text_input("Choose a symbol (with .NS)", "AAPL")
     ticker_symbol = col2.selectbox("Choose a symbol (with .NS)", stock_df['Symbol'])
-    col2.image("./Streamlit_app/static/bull.jpg",width=400)
+    col2.image("./static/bull.jpg",width=400)
     data = yf.download(ticker_symbol, start=start, end=end)
     st.subheader(f"Stock Price Data for {ticker_symbol}")
     st.dataframe(data.tail())
