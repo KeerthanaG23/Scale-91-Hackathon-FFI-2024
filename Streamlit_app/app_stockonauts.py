@@ -1884,7 +1884,7 @@ else:
     st.header("Latest News")
     if(ticker_symbol!="AAPL"):
         ticker_symbol = ticker_symbol[:-3]
-    news_api_key = 'c7766b91fd1e4e5fafee2fd91e388b8c'  
+    news_api_key = '8b0eb0ffb4964f63bb1f32e6fc16cf3e'  
     news_url = f'https://newsapi.org/v2/everything?q={ticker_symbol}&apiKey={news_api_key}&sortBy=publishedAt'
     response = requests.get(news_url)
     news_data = response.json()
