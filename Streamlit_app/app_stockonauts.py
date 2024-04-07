@@ -1,6 +1,6 @@
 from matplotlib.pyplot import axis
 import matplotlib.pyplot as plt
-from yahoo_fin import stock_info
+#from yahoo_fin import stock_info
 
 import streamlit as st  
 from streamlit_option_menu import option_menu 
